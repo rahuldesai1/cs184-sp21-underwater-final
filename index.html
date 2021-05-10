@@ -28,34 +28,123 @@
 
 <body>
 
-  <h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2021</h1>
-  <h1 align="middle">Final Project: Realistic Underwater Rendering</h1>
-  <h2 align="middle">Team 33: Anthony Patitucci, Charlie Zhang, Dani Swords, Rahul Desai</h2>
+  <h1>Realistic Underwater Rendering</h1>
+  <h3>CS 184 Final Project </h3>
+  <p>Team 33: Anthony Patitucci, Charlie Zhang, Dani Swords, Rahul Desai</p>
 
-  <br><br>
+  <br>
 
   <div>
+    <h2>Abstract</h2>
+    <p>The refraction of light through water can result in very interesting optical effects that are essential to model in order to render realistic looking scenes. For our project, we aimed to render realistic lighting effects for scenes involving water by implementing the caustic patterns that we commonly see at the bottom of swimming pools. These patterns are caused by a wavy water surface that refract and focus light in specific locations along the floor of the water. With the path tracing algorithm, caustics are difficult to render because they require an excessively large number of rays to be traced through the scene to converge on an accurate result. We chose to tackle this problem by implementing photon mapping which is a global illumination method that traces photons through the scene in order to more efficiently estimate the effects of caustics. In this project, we build on top of our implementation of Project 3 (PathTracer), by implementing the 2-phase photon mapping algorithm with some minor optimizations. After generating a variety of water surfaces using displacement mapping, we were able to get some very convincing results and gain some interesting insights.
+</p>
+    <a href="url">Final Video</a>
 
-    <div align="middle">
-      <table style="width=100%">
+    <h2>Technical Approach</h2>
+
+    <h2>Results</h2>
+    <h3>Top Renders</h3>
+      <div align="middle">
+        <table style="width=100%">
+          <tr>
+            <td>
+              <img src="images/water.png" align="middle" width="400px" />
+            </td>
+            <td>
+              <img src="images/cow.png" align="middle" width="400px" />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <img src="images/spheres.png" align="middle" width="400px" />
+            </td>
+            <td>
+              <img src="images/ripples.png" align="middle" width="400px" />
+            </td>
+          </tr>
+        </table>
+      </div>
+
+    <br>
+    <h3>Interesting Findings</h3>
+      <p> After experimenting with different scenes and hyperparameters of the photon mapping code, we learned some interesting things about our implementation: </p>
+      <table>
         <tr>
           <td>
-            <img src="images/water.png" align="middle" width="400px" />
+            <img src="images/lightsource.png" align="middle" width="500px" />
           </td>
-          <td>
-            <img src="images/row.png" align="middle" width="400px" />
+          <td style="padding-left: 20px">
+            As we see in the image below, the point light source generates much sharper caustics compared to the area light source. This is likely because the area light source more uniformly illuminates the floor of the water compared to the point light source and as a result the contrast between caustics and non-caustics is less apparent.
           </td>
         </tr>
         <tr>
           <td>
-            <img src="images/spheres.png" align="middle" width="400px" />
+            <img src="images/waterlevel.gif" align="middle" width="500px" />
           </td>
+          <td style="padding-left: 20px">
+            Another interesting thing that we observed is how the caustics get farther apart from each other as the water gets closer to the light source.
+          </td>
+        </tr>
+        <tr>
           <td>
-            <img src="images/ripples.png" align="middle" width="400px" />
+            <img src="images/photons.gif" align="middle" width="500px" />
+          </td>
+          <td style="padding-left: 20px">
+            The animation below shows various renders with an increasing number of photons. As we can see, as the number of photons increases, the caustics become much sharper. In this example we go from 20,000 photons to 1.6 million.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <img src="images/radius.gif" align="middle" width="500px" />
+          </td>
+          <td style="padding-left: 20px">
+            This animation shows us how the renders change as we increase the number of photons used in each radiance calculation. As we go from 100 to 500 photons we can see that the caustics become less sharp; however, there is also less noise on the image overall. This is an interesting tradeoff that we explored when trying to render the most realistic looking images. We settled on a value of 300 photons for a majority of our renders.
           </td>
         </tr>
       </table>
-    </div>
+
+    <h2>References</h2>
+    <a href="http://graphics.ucsd.edu/~henrik/papers/photon_map/global_illumination_using_photon_maps_egwr96.pdf">Realistic Image Synthesis Using Photon Mapping</a><br>
+    <a href="https://www.cs.princeton.edu/courses/archive/fall18/cos526/papers/jensen01.pdf">A Practical Guide to Global Illumination using Photon Mapping</a><br>
+    <a href="https://web.cs.wpi.edu/~emmanuel/courses/cs563/write_ups/zackw/photon_mapping/PhotonMapping.html">Photon Mapping Overview</a><br>
+    <a href="https://www.cs.umd.edu/users/mount/Indep/SCheah/causticpaper.html">An Implementation Of A Recursive Ray Tracer That Renders Caustic Lighting Effects</a><br>
+
+    <h2>Team Member Constributions</h2>
+      <p>We all worked together in conducting initial research, putting together the technical design doc, and creating slides and other presentation materials. In terms of implementation, our individual contributions are as follows:</p>
+
+      <ol>
+
+        <li>Anthony Patitucci</li>
+          <ul>
+            <li></li>
+            <li></li>
+            <li></li>
+          </ul>
+
+        <li>Charlie Zhang</li>
+          <ul>
+            <li></li>
+            <li></li>
+            <li></li>
+          </ul>
+
+        <li>Dani Swords</li>
+          <ul>
+            <li></li>
+            <li></li>
+            <li></li>
+          </ul>
+
+        <li>Rahul Desai</li>
+          <ul>
+            <li>Implementation of Phase 1 of Photon Mapping</li>
+            <li>Global and Caustic Photon Map Visualizations</li>
+            <li>Debugging the Photon Map Implementation</li>
+          </ul>
+      <ol>
+
+
+  </div>
 
 </body>
 </html>
