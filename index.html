@@ -17,6 +17,16 @@
     p {
     }
 
+    figure{
+      display: inline-block;
+    }
+
+    figcaption {
+      margin-top: 10px;
+      text-align: center;
+      color: gray;
+    }
+
     h1,
     h2,
     h3,
@@ -67,6 +77,7 @@
       <p>
       To trace photons through the scene, we do something similar to ray tracing. We start by sampling a random location on the light source as well as a random direction out of the light source by using a cosine hemisphere sampler. We also compute the power of the photon by computing the power of the light and dividing that by the number of photons that we shoot out of the light source. The power of the light can be computed by R = P / (A x Ω) where R is Radiance, P is Power, A is area of the light source, and Ω is the solid angle that the light source emits into. Using this newly sampled ray, we compute its hit point with the scene. If the hit point is at a diffuse surface, we store the photon in the photon map along with its power and incoming direction.
       </p>
+            <img src="images/cornellbox.png" align="middle" width="400px" />
 
       <p>
       Then, we must determine if the photon is absorbed or reflected off the surface. We do this by using Russian Roulette with a continuation probability equal to the probability of reflectance of the object that we have intersected with in order to get an unbiased estimate of the distribution of photons through the scene. The probability of reflectance is given by
@@ -85,7 +96,15 @@
       This single photon map is not enough to render realistic underwater scenes. The key to rendering great looking underwater caustics is the use of a caustic photon map. The caustic photon map is a special photon map that stores photons that have only been specularly reflected. We implement this by shooting photons at the light source directly at specular surfaces and then storing the first location at which they hit a diffuse surface. Keeping a separate caustic photon map helps with the accuracy of rendering, as high density caustic photons do not need to be mixed with low density global photons during radiance estimation. Splitting the maps also decreases overall kd-tree height and therefore improves nearest neighbor lookup speeds.
       </p>
 
-</p>
+      <figure>
+        <img src="images/rayimage.png" align="middle" width="400px" />
+        <figcaption>Visualization of photon ray traversal</figcaption>
+      </figure>
+      <figure>
+        <img src="images/mapimage.png" align="middle" width="400px" />
+        <figcaption>Visualization of photons in caustic photon map</figcaption>
+      </figure>
+
       <h4>Phase 2</h4>
       <p>
       In the second phase we render the image using regular path tracing with the help of the photon maps. We perform Monte Carlo sampling of outgoing radiance with Russian Roulette termination for recursively evaluating incoming radiance. However, when a camera ray hits a diffuse surface, we immediately stop the bounce recursion and instead directly estimate the outgoing radiance using nearby photons. We query for a fixed number of nearest neighbor photons, which can be thought of as a search with an adaptive radius and can be done efficiently with a kd-tree. With the assumption that those photons lie on a locally flat disk around the intersection point, we can estimate the outgoing radiance Lr as the following weighted sum of the power contributions 𝛥𝛷p of each photon:
@@ -94,15 +113,23 @@
       <p>
       Here r is the maximum distance from the intersection point to any of its N nearest neighbor photons, and 𝜔p is the incident direction of each photon.
       </p>
+        <img src="images/phase2.png" align="middle" width="400px" /><br>
       <p>
-      The estimate may break down for points close to edges and corners, but the error can be reduced with additional photons in the map. This estimate is performed separately for the global and caustic photon maps, and the estimates from both are then added together. We use this estimate for both direct and indirect illumination. With some additional calculation, direct illumination could be calculated more exactly through importance sampling, though it was not necessary for our purposes because we were focusing primarily on caustic effects. Additionally, using the photon maps for direct illumination provides a good demonstration of the kinds of noise that this method produces, which tends to be lower frequency than that of Monte Carlo sampling.
+      <p>
+      The estimate may break down for points close to edges and corners, but the error can be reduced with additional photons in the map. This estimate is performed separately for the global and caustic photon maps, and the estimates from both are then added together. We use this estimate for both direct and indirect illumination of diffuse surfaces. With some additional computation, direct illumination could be calculated more exactly through importance sampling, though we omitted it because we were focusing primarily on caustic effects. Additionally, using the photon maps for direct illumination provides a good demonstration of the kinds of noise that this method produces, which tends to be lower frequency than that of Monte Carlo sampling.
       </p>
       <p>
+      For specular surfaces, we use path tracing as normal instead of estimating from the photon map to save on the number of photons that we would otherwise need to make a good estimate, as only photons coming in from the mirror direction would have a significant contribution in this case.
+      </p>
+      <p>
+      To reduce blurring in caustics associated with nearest neighbor estimates, we implemented cone filtering, which weights the contributions of nearby photons more heavily than those of faraway photons. The radiance estimate for the caustic photon map then becomes:
+      </p>
+        <img src="images/coneequation1.png" align="middle" width="400px" style="margin-right: 50px"/>
+        <img src="images/coneequation2.png" align="middle" width="150px" />
+      <p>
+      Wpc is a weight for each photon derived from dp, the distance from the photon to x, and k, a filter parameter >= 1 that we set. The other variables are as before.
       </p>
 
-
-
-      
     <h3>Major Problems Encountered</h3>
       <p>
       Generating the scenes in Blender took longer than initially planned due to unexpected bugs. For example, when we were creating the .dae files, we noticed that our initial .dae files led to overly dark scenes. We were able to solve this by moving the borders of the water to the outside of the walls and floor.
@@ -182,7 +209,9 @@ A lot of time was spent attempting to figure out why our initial results were ge
 
     <h2>Further Work</h2>
     <p>
-Since the quality of renders are constrained by the memory needed to store the photon maps, we could’ve worked on storing the photon maps more efficiently and making the photon data more compact. Additionally, there are extensions to photon mapping such as progressive photon mapping that we could’ve implemented with additional time which do not require storing the entire photon map at once while still maintaining image quality.
+    One underwater lighting effect that we would have liked to implement was god rays/shafts of light, which would’ve involved extending the photon map algorithm to handle volumetric scattering.
+
+Another possibility was to implement progressive photon mapping, a technique that does not require storing the entire photon map at once. This would help solve the issue of render quality being constrained by the amount of memory needed to store sufficiently large photon maps.
     </p>
 
     <h2>References</h2>
@@ -190,7 +219,7 @@ Since the quality of renders are constrained by the memory needed to store the p
     <a href="https://www.cs.princeton.edu/courses/archive/fall18/cos526/papers/jensen01.pdf">A Practical Guide to Global Illumination using Photon Mapping</a><br>
     <a href="https://web.cs.wpi.edu/~emmanuel/courses/cs563/write_ups/zackw/photon_mapping/PhotonMapping.html">Photon Mapping Overview</a><br>
     <a href="https://www.cs.umd.edu/users/mount/Indep/SCheah/causticpaper.html">An Implementation Of A Recursive Ray Tracer That Renders Caustic Lighting Effects</a><br>
-    <a href="https://www.energetiq.com/technote-understanding-radiance-brightness-irradiance-radiant-flux">Computing the power of light given radiance</a>
+    <a href="https://www.energetiq.com/technote-understanding-radiance-brightness-irradiance-radiant-flux">Computing the power of light given radiance</a><br>
     <a href="https://www.youtube.com/watch?v=grdhD3PPkKs&t=250s">Creating Water with Displacement Mapping in Blender</a>
 
     <h2>Team Member Contributions</h2>
