@@ -59,11 +59,8 @@
     <p>We split up the implementation of the project into two main parts: using Blender to generate a variety of scenes containing water and implementing the photon mapping algorithm.</p>
 
     <h3>Generating Underwater Scenes</h3>
-      <p>In order to simulate realistic caustics, we first needed to create realistic water.</p>
-      <h4>Water Material</h4>
-        <p>Ignoring volumetric scattering effects, water can be modeled as a surface material much like glass, capable of both refraction and reflection. Therefore, our water material is similar to the pre-existing glass material defined in our renderer but with a tweaked index of refraction (IOR) of 1.33.</p>
+      <p>In order to simulate realistic caustics, we first needed to create realistic water. Ignoring volumetric scattering effects, water can be modeled as a surface material much like glass, capable of both refraction and reflection. Therefore, our water material is similar to the pre-existing glass material defined in our renderer but with a tweaked index of refraction (IOR) of 1.33.</p>
 
-      <h4>Water Geometry</h4>
         <p>Having some kind of displacement on the surface of the water is necessary for creating interesting caustics. A flat surface would refract photons uniformly, yielding rather uninteresting results. To create waves in our scenes, we used displacement mapping on the surface of our water. Blender’s default cloud texture created the ocean waves, while the ripple effects were created with a circular sine wave texture. The side faces of our water mesh are flat, allowing for easy underwater viewing while still refracting the outgoing light.</p>
 
     <h3>Photon Mapping</h3>
@@ -74,10 +71,10 @@
       The primary goal of the first phase of the algorithm is to build the photon map. This involves two key components: tracing the photons from the light source though the scene and storing the photons in an in-memory data structure.
       </p>
 
-      <p>
+      <img src="images/cornellbox.png" align="right" width="300px" style="align: right"/>
+      <p align="left">
       To trace photons through the scene, we do something similar to ray tracing. We start by sampling a random location on the light source as well as a random direction out of the light source by using a cosine hemisphere sampler. We also compute the power of the photon by computing the power of the light and dividing that by the number of photons that we shoot out of the light source. The power of the light can be computed by R = P / (A x Ω) where R is Radiance, P is Power, A is area of the light source, and Ω is the solid angle that the light source emits into. Using this newly sampled ray, we compute its hit point with the scene. If the hit point is at a diffuse surface, we store the photon in the photon map along with its power and incoming direction.
       </p>
-            <img src="images/cornellbox.png" align="middle" width="400px" />
 
       <p>
       Then, we must determine if the photon is absorbed or reflected off the surface. We do this by using Russian Roulette with a continuation probability equal to the probability of reflectance of the object that we have intersected with in order to get an unbiased estimate of the distribution of photons through the scene. The probability of reflectance is given by
@@ -106,14 +103,14 @@
       </figure>
 
       <h4>Phase 2</h4>
-      <p>
-      In the second phase we render the image using regular path tracing with the help of the photon maps. We perform Monte Carlo sampling of outgoing radiance with Russian Roulette termination for recursively evaluating incoming radiance. However, when a camera ray hits a diffuse surface, we immediately stop the bounce recursion and instead directly estimate the outgoing radiance using nearby photons. We query for a fixed number of nearest neighbor photons, which can be thought of as a search with an adaptive radius and can be done efficiently with a kd-tree. With the assumption that those photons lie on a locally flat disk around the intersection point, we can estimate the outgoing radiance Lr as the following weighted sum of the power contributions 𝛥𝛷p of each photon:
+        <img src="images/phase2.png" align="right" width="300px" />
+      <p align="left">
+      In the second phase we render the image using regular path tracing with the help of the photon maps. We perform Monte Carlo sampling of outgoing radiance with Russian Roulette termination for recursively evaluating incoming radiance. However, when a camera ray hits a diffuse surface, we immediately stop the bounce recursion and instead directly estimate the outgoing radiance using nearby photons. We query for a fixed number of nearest neighbor photons, which can be thought of as a search with an adaptive radius and can be done efficiently with a kd-tree. With the assumption that those photons lie on a locally flat disk around the intersection point, we can estimate the outgoing radiance L<sub>r</sub> as the following weighted sum of the power contributions 𝛥𝛷<sub>p</sub> of each photon:
       </p>
         <img src="images/rendequation.png" align="middle" width="400px" /><br>
       <p>
-      Here r is the maximum distance from the intersection point to any of its N nearest neighbor photons, and 𝜔p is the incident direction of each photon.
+      Here r is the maximum distance from the intersection point to any of its N nearest neighbor photons, and 𝜔<sub>p</sub> is the incident direction of each photon.
       </p>
-        <img src="images/phase2.png" align="middle" width="400px" /><br>
       <p>
       <p>
       The estimate may break down for points close to edges and corners, but the error can be reduced with additional photons in the map. This estimate is performed separately for the global and caustic photon maps, and the estimates from both are then added together. We use this estimate for both direct and indirect illumination of diffuse surfaces. With some additional computation, direct illumination could be calculated more exactly through importance sampling, though we omitted it because we were focusing primarily on caustic effects. Additionally, using the photon maps for direct illumination provides a good demonstration of the kinds of noise that this method produces, which tends to be lower frequency than that of Monte Carlo sampling.
@@ -127,7 +124,7 @@
         <img src="images/coneequation1.png" align="middle" width="400px" style="margin-right: 50px"/>
         <img src="images/coneequation2.png" align="middle" width="150px" />
       <p>
-      Wpc is a weight for each photon derived from dp, the distance from the photon to x, and k, a filter parameter >= 1 that we set. The other variables are as before.
+      W<sub>pc</sub> is a weight for each photon derived from d<sub>p</sub>, the distance from the photon to x, and k, a filter parameter >= 1 that we set. The other variables are as before.
       </p>
 
     <h3>Major Problems Encountered</h3>
