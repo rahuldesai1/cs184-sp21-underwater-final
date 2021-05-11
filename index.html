@@ -20,7 +20,7 @@
       font-family: 'Source Sans Pro', sans-serif;
     }
   </style>
-  <title>CS 184 Mesh Editor</title>
+  <title>CS 184 Final Project</title>
   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
   <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
 </head>
@@ -41,6 +41,37 @@
     <a href="url">Final Video</a>
 
     <h2>Technical Approach</h2>
+    <p>We split up the implementation of the project into two main parts: using Blender to generate a variety of scenes containing water and implementing the photon mapping algorithm.</p>
+    <h3>Generating Underwater Scenes</h3>
+      <p>In order to simulate realistic caustics, we first needed to create realistic water.</p>
+      <h4>Water Material</h4>
+        <p>Water is a refractive material much like glass. Therefore, our water material is modeled the same as a glass (refractive) material with a tweaked index of refraction (IOR) of water: 1.33.</p>
+
+      <h4>Water Geometry</h4>
+        <p>Having some kind of displacement on the surface of the water is necessary for creating interesting caustics. A flat surface would refract photons uniformly, yielding rather uninteresting results. To create waves in our scenes, we used displacement mapping on the surface of our water. Blender’s default cloud texture created the ocean waves, while the ripple effects were created with a circular sine wave texture. The face of our water is flat, allowing for easy underwater viewing, while still refracting the outcoming light. </p>
+
+    <h3>Photon Mapping</h3>
+      <p>Photon mapping is a 2-phase algorithm built on top of ray tracing that involves generating a photon map and then using that photon map to estimate the radiance at various points in the scene. </p>
+      <h4>Phase 1</h4>
+      <p>The primary goal of the first phase of the algorithm is to build the photon map. This involves two key components: tracing the photons from the light source though the scene and storing the photons in an in-memory data structure.</p>
+
+      <p>To trace photons through the scene, we do something similar to ray tracing. We start by sampling a random location on the light source as well as a random direction out of the light source by using a cosine hemisphere sampler. We also compute the power of the photon by computing the power of the light and dividing that by the number of photons that we shoot out of the light source. The power of the light can be computed by R = P / (A x Ω) where R is Radiance, P is Power, A is area of the light source, and Ω is the solid angle that the light source subtends. Using this newly sampled ray, we compute its hit point with the scene. If the hit point is diffuse, we will store the photon in the photon map along with its power and incoming direction.</p>
+
+      <p>Then, we must determine if the photon is absorbed or reflected off the surface. We do this by using russian roulette with a continuation probability equal to the probability of reflectance of the object that we have intersected with in order to get an unbiased estimate of the distribution of photons through the scene. The probability of reflectance is given by</p>
+            <img src="images/probequation.png" align="middle" width="400px" />
+
+      <p> where Pr, Pg, Pd is the power of the incoming photon along the red, green, and blue channel and dr, dg, db are the reflectance properties of the material.</p>
+Note, that if the surface is water, we must use the Fresnel Equations to compute the probability of transmission, and use this in Russian Roulette as well. If the algorithm determines that the photon is reflected or transmitted, then we recursively trace the photon in the sampled outgoing direction; otherwise, we terminate the path for that photon.
+
+The photon map itself is stored as a kd-tree because this allows us to efficiently do nearest neighbor queries in 3 dimensional space.
+
+This single photon map is not enough to render realistic underwater scenes. The key to rendering great looking underwater caustics is the use of a caustic photon map. The caustic photon map is a special photon map that stores photons that have only been specularly reflected. We implement this by shooting photons at the light source directly at specular surfaces and then storing the first location at which they hit a diffuse surface. Caustic maps are essential for caustics because they enable the algorithm to more accurately model how light refracts through the water.
+</p>
+      <h4>Phase 2</h4>
+    <h3>Major Problems Encountered</h3>
+      <p></p>
+    <h3>Lessons Learned</h3>
+      <p>The complexity and open-endedness of this final project taught us how to research, design, and implement an idea from scratch as well as how to effectively work together in a large team. However, there are a few more specific and valuable lessons that we gained that will undoubtedly be helpful in future projects. First and foremost is how important visual debugging tools are for computer graphics projects. When debugging our photon map implementation, we ended up spending quite a bit of time writing code that would allow us to visualize the photon maps and the path of the photons through the scene. In the future, it would be important to have a very good idea of how we would debug our code and consider that as a factor when determining the project timeline. In addition, we learned that paying attention to the input is sometimes more important than debugging the code. In this project we unfortunately wasted a lot of time debugging code that was working because we thought there was a bug, when in fact there was an issue with the input scenes that we were rendering. </p>
 
     <h2>Results</h2>
     <h3>Top Renders</h3>
@@ -82,7 +113,7 @@
             <img src="images/waterlevel.gif" align="middle" width="500px" />
           </td>
           <td style="padding-left: 20px">
-            Another interesting thing that we observed is how the caustics get farther apart from each other as the water gets closer to the light source.
+            Another interesting effect that we observed is how the caustics get farther apart from each other as the water gets closer to the light source.
           </td>
         </tr>
         <tr>
@@ -108,6 +139,7 @@
     <a href="https://www.cs.princeton.edu/courses/archive/fall18/cos526/papers/jensen01.pdf">A Practical Guide to Global Illumination using Photon Mapping</a><br>
     <a href="https://web.cs.wpi.edu/~emmanuel/courses/cs563/write_ups/zackw/photon_mapping/PhotonMapping.html">Photon Mapping Overview</a><br>
     <a href="https://www.cs.umd.edu/users/mount/Indep/SCheah/causticpaper.html">An Implementation Of A Recursive Ray Tracer That Renders Caustic Lighting Effects</a><br>
+    <a href="https://www.energetiq.com/technote-understanding-radiance-brightness-irradiance-radiant-flux">Computing the power of light given radiance</a>
 
     <h2>Team Member Constributions</h2>
       <p>We all worked together in conducting initial research, putting together the technical design doc, and creating slides and other presentation materials. In terms of implementation, our individual contributions are as follows:</p>
@@ -116,16 +148,16 @@
 
         <li>Anthony Patitucci</li>
           <ul>
-            <li></li>
-            <li></li>
-            <li></li>
+            <li>Blender Scene Creation for Visualizations</li>
+            <li>Water Creation (Applying Material and Displacement Map)</li>
+            <li>Debugging / Editing .dae files</li>
           </ul>
 
         <li>Charlie Zhang</li>
           <ul>
-            <li></li>
-            <li></li>
-            <li></li>
+            <li>Implementation of Phase 2 of Photon Mapping</li>
+            <li>Optimizations and photon tracing path visualizations</li>
+            <li>Debugging the photon map implementation</li>
           </ul>
 
         <li>Dani Swords</li>
